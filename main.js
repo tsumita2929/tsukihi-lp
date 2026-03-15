@@ -1,14 +1,14 @@
 // ============================================
-// TSUKIHI — 月日  |  Landing Page Scripts
+// TSUKIHI — 月日  |  Sumi-Ink Editorial Scripts
 // ============================================
 
 (function () {
   'use strict';
 
   // --- Header scroll state ---
-  const header = document.getElementById('header');
-  let lastScrollY = 0;
-  let ticking = false;
+  var header = document.getElementById('header');
+  var lastScrollY = 0;
+  var ticking = false;
 
   function onScroll() {
     lastScrollY = window.scrollY;
@@ -30,29 +30,41 @@
   window.addEventListener('scroll', onScroll, { passive: true });
 
   // --- Mobile menu ---
-  const menuBtn = document.getElementById('menuBtn');
-  const nav = document.getElementById('nav');
+  var menuBtn = document.getElementById('menuBtn');
+  var nav = document.getElementById('nav');
 
-  menuBtn.addEventListener('click', function () {
-    const isOpen = menuBtn.classList.toggle('is-open');
-    nav.classList.toggle('is-open');
-    document.body.style.overflow = isOpen ? 'hidden' : '';
-    menuBtn.setAttribute('aria-label', isOpen ? 'メニューを閉じる' : 'メニューを開く');
-    menuBtn.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
-  });
-
-  // Close menu on nav link click
-  nav.querySelectorAll('a').forEach(function (link) {
-    link.addEventListener('click', function () {
-      menuBtn.classList.remove('is-open');
-      nav.classList.remove('is-open');
-      document.body.style.overflow = '';
-      menuBtn.setAttribute('aria-expanded', 'false');
+  if (menuBtn && nav) {
+    menuBtn.addEventListener('click', function () {
+      var isOpen = menuBtn.classList.toggle('is-open');
+      nav.classList.toggle('is-open');
+      document.body.style.overflow = isOpen ? 'hidden' : '';
+      menuBtn.setAttribute('aria-label', isOpen ? 'メニューを閉じる' : 'メニューを開く');
+      menuBtn.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
     });
-  });
 
-  // --- Scroll reveal with variants ---
-  // Default: translateY(32px) fade
+    // Close menu on nav link click
+    nav.querySelectorAll('a').forEach(function (link) {
+      link.addEventListener('click', function () {
+        menuBtn.classList.remove('is-open');
+        nav.classList.remove('is-open');
+        document.body.style.overflow = '';
+        menuBtn.setAttribute('aria-expanded', 'false');
+      });
+    });
+
+    // Close menu on Escape key
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape' && nav.classList.contains('is-open')) {
+        menuBtn.classList.remove('is-open');
+        nav.classList.remove('is-open');
+        document.body.style.overflow = '';
+        menuBtn.setAttribute('aria-expanded', 'false');
+        menuBtn.focus();
+      }
+    });
+  }
+
+  // --- Scroll reveal with staggered animations ---
   var revealDefault = [
     '.section__header',
     '.product-card',
@@ -69,7 +81,6 @@
     '.job-card'
   ];
 
-  // Light: translateY(20px) faster fade — text elements
   var revealLight = [
     '.philosophy__lead',
     '.philosophy__body',
@@ -77,13 +88,11 @@
     '.footer__cta-inner'
   ];
 
-  // Slide left: translateX(-24px) — images and brand elements
   var revealSlideLeft = [
     '.philosophy__image',
     '.footer__brand'
   ];
 
-  // Slow: translateY(40px) longer duration — hero images
   var revealSlow = [
     '.products__image'
   ];
@@ -95,7 +104,17 @@
       var elements = document.querySelectorAll(selector);
       elements.forEach(function (el, i) {
         el.classList.add(className);
-        el.style.transitionDelay = (i * 0.1) + 's';
+        // Stagger within each group of siblings
+        var parent = el.parentElement;
+        if (parent) {
+          var siblings = parent.querySelectorAll(selector);
+          var index = Array.prototype.indexOf.call(siblings, el);
+          if (index >= 0) {
+            el.style.transitionDelay = (index * 0.08) + 's';
+          }
+        } else {
+          el.style.transitionDelay = (i * 0.08) + 's';
+        }
         allReveals.push(el);
       });
     });
@@ -106,6 +125,7 @@
   setupReveals(revealSlideLeft, 'reveal--slide-left');
   setupReveals(revealSlow, 'reveal--slow');
 
+  // Use rootMargin for better trigger timing
   var observer = new IntersectionObserver(function (entries) {
     entries.forEach(function (entry) {
       if (entry.isIntersecting) {
@@ -114,8 +134,8 @@
       }
     });
   }, {
-    threshold: 0.15,
-    rootMargin: '0px 0px -40px 0px'
+    threshold: 0.1,
+    rootMargin: '0px 0px -60px 0px'
   });
 
   allReveals.forEach(function (el) {
@@ -130,7 +150,7 @@
     });
   }
 
-  // --- FAQ accordion with aria-expanded ---
+  // --- FAQ accordion ---
   document.querySelectorAll('.faq-item__question').forEach(function (btn) {
     btn.setAttribute('aria-expanded', 'false');
     btn.addEventListener('click', function () {
@@ -150,10 +170,33 @@
       var target = document.querySelector(targetId);
       if (target) {
         e.preventDefault();
-        var headerOffset = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--header-h'));
-        var top = target.getBoundingClientRect().top + window.scrollY - headerOffset;
+        var headerH = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--header-h')) || 76;
+        var top = target.getBoundingClientRect().top + window.scrollY - headerH;
         window.scrollTo({ top: top, behavior: 'smooth' });
       }
     });
   });
+
+  // --- Subtle parallax for hero image (performance-safe) ---
+  var heroImage = document.querySelector('.hero__image img');
+  if (heroImage && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    var heroSection = document.querySelector('.hero');
+    var heroHeight = heroSection ? heroSection.offsetHeight : 0;
+    var parallaxTicking = false;
+
+    function updateParallax() {
+      if (lastScrollY < heroHeight) {
+        var offset = lastScrollY * 0.15;
+        heroImage.style.transform = 'scale(1.05) translateY(' + offset + 'px)';
+      }
+      parallaxTicking = false;
+    }
+
+    window.addEventListener('scroll', function () {
+      if (!parallaxTicking) {
+        requestAnimationFrame(updateParallax);
+        parallaxTicking = true;
+      }
+    }, { passive: true });
+  }
 })();
