@@ -1890,9 +1890,21 @@ ul {
     --header-h: 64px;
   }
 
+  /* Remove backdrop-filter containing block when menu is open */
+  .header.menu-open {
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    background: transparent;
+    border-bottom-color: transparent;
+  }
+
   .header__nav {
     position: fixed;
-    inset: 0;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    height: 100dvh;
     background: var(--cream);
     display: flex;
     flex-direction: column;
